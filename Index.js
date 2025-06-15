@@ -4,7 +4,7 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
-
+const { ObjectId } = require('mongodb');
 
 // middleware 
 app.use(cors());
@@ -42,6 +42,70 @@ async function run() {
             const result = await booksCollection.insertOne(newBook);
             res.send(result);
         });
+
+        // Get Books by User Email
+        app.get('/my-books/:email', async (req, res) => {
+            const email = req.params.email;
+            try {
+                const result = await booksCollection.find({ user_email: email }).toArray();
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch user books' });
+            }
+        });
+
+
+        //  update a book
+        app.put('/books/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedBook = req.body;
+
+            try {
+                const result = await booksCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: updatedBook }
+                );
+
+                if (result.modifiedCount > 0) {
+                    res.send({ success: true });
+                } else {
+                    res.status(404).send({ message: "Book not found or no changes made." });
+                }
+            } catch (err) {
+                console.error("🚨 Update error:", err);
+                res.status(500).send({
+                    error: "Failed to update book",
+                    details: err.message
+                });
+            }
+        });
+
+
+
+        // DELETE book by ID
+        app.delete('/books/:id', async (req, res) => {
+            const id = req.params.id;
+
+            try {
+                if (!ObjectId.isValid(id)) {
+                    return res.status(400).send({ error: "Invalid ID format" });
+                }
+
+                const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
+
+                if (result.deletedCount > 0) {
+                    res.send({ success: true });
+                } else {
+                    res.status(404).send({ message: "Book not found" });
+                }
+            } catch (err) {
+                console.error("❌ DELETE ERROR:", err); // <-- log exact error
+                res.status(500).send({ error: "Failed to delete", details: err.message });
+            }
+        });
+
+
+
 
 
         await client.db("admin").command({ ping: 1 });
