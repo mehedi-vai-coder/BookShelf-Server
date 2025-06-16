@@ -42,6 +42,25 @@ async function run() {
             res.send(result);
         });
 
+        //single book by id 
+        app.get("/books/:id", async (req, res) => {
+            const id = req.params.id;
+            const book = await booksCollection.findOne({ _id: new ObjectId(id) });
+            res.send(book);
+        });
+
+        // Upvote Book
+        app.patch("/books/:id/upvote", async (req, res) => {
+            const id = req.params.id;
+            const result = await booksCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $inc: { upvotes: 1 } }
+            );
+            res.send(result);
+        });
+
+
+
         // Get Books by User Email
         app.get('/my-books/:email', async (req, res) => {
             const email = req.params.email;
@@ -98,7 +117,7 @@ async function run() {
                     res.status(404).send({ message: "Book not found" });
                 }
             } catch (err) {
-                console.error("❌ DELETE ERROR:", err); 
+                console.error("❌ DELETE ERROR:", err);
                 res.status(500).send({ error: "Failed to delete", details: err.message });
             }
         });
