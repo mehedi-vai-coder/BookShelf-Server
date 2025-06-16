@@ -11,7 +11,6 @@ app.use(cors());
 app.use(express.json());
 
 
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.tmx4o0d.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
@@ -99,14 +98,10 @@ async function run() {
                     res.status(404).send({ message: "Book not found" });
                 }
             } catch (err) {
-                console.error("❌ DELETE ERROR:", err); // <-- log exact error
+                console.error("❌ DELETE ERROR:", err); 
                 res.status(500).send({ error: "Failed to delete", details: err.message });
             }
         });
-
-
-
-
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
