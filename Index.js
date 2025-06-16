@@ -10,9 +10,7 @@ const { ObjectId } = require('mongodb');
 app.use(cors());
 app.use(express.json());
 
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.tmx4o0d.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
 
 const client = new MongoClient(uri, {
     serverApi: {
@@ -24,44 +22,101 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-
         await client.connect();
 
-        const booksCollection = client.db('BookShelf').collection('Books')
+        const booksCollection = client.db('BookShelf').collection('Books');
+        const reviewsCollection = client.db('BookShelf').collection('Reviews');
 
-        //Books API get data 
+        // Get all books
         app.get('/books', async (req, res) => {
             const result = await booksCollection.find().toArray();
             res.send(result);
         });
 
-        // Add Book 
+        // Add new book
         app.post('/books', async (req, res) => {
             const newBook = req.body;
             const result = await booksCollection.insertOne(newBook);
             res.send(result);
         });
 
-        //single book by id 
+        // Get single book by ID
         app.get("/books/:id", async (req, res) => {
             const id = req.params.id;
             const book = await booksCollection.findOne({ _id: new ObjectId(id) });
             res.send(book);
         });
 
-        // Upvote Book
-        app.patch("/books/:id/upvote", async (req, res) => {
-            const id = req.params.id;
-            const result = await booksCollection.updateOne(
-                { _id: new ObjectId(id) },
-                { $inc: { upvotes: 1 } }
-            );
-            res.send(result);
+        // Upvote a book
+        app.patch('/books/:id/upvote', async (req, res) => {
+            const { id } = req.params;
+
+            if (!ObjectId.isValid(id)) {
+                return res.status(400).send({ message: "Invalid book ID" });
+            }
+
+            try {
+                const result = await booksCollection.findOneAndUpdate(
+                    { _id: new ObjectId(id) },
+                    { $inc: { upvote: 1 } },
+                    { returnOriginal: false }
+                );
+
+                if (!result.value) {
+                    return res.status(404).send({ message: "Book not found" });
+                }
+
+                res.send({ message: "Upvote success", updated: result.value });
+            } catch (err) {
+                console.error("Upvote error:", err);
+                res.status(500).send({ message: "Failed to upvote book" });
+            }
         });
 
 
 
-        // Get Books by User Email
+        // Get all reviews for a book
+        app.get("/reviews", async (req, res) => {
+            const bookId = req.query.book_id;
+            const reviews = await reviewsCollection.find({ book_id: bookId }).toArray();
+            res.send(reviews);
+        });
+
+        // Post a review
+        app.post("/reviews", async (req, res) => {
+            const { book_id, reviewer_email } = req.body;
+
+            const exists = await reviewsCollection.findOne({
+                book_id,
+                reviewer_email
+            });
+
+            if (exists) return res.status(400).send({ message: "Already reviewed" });
+
+            const result = await reviewsCollection.insertOne(req.body);
+            res.send(result);
+        });
+
+        // Update a review
+        app.patch("/reviews/:id", async (req, res) => {
+            const id = req.params.id;
+            const { review_text } = req.body;
+
+            const result = await reviewsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { review_text } }
+            );
+
+            res.send(result);
+        });
+
+        // Delete a review
+        app.delete("/reviews/:id", async (req, res) => {
+            const result = await reviewsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+            res.send(result);
+        });
+
+        // Get books by user email
         app.get('/my-books/:email', async (req, res) => {
             const email = req.params.email;
             try {
@@ -72,8 +127,7 @@ async function run() {
             }
         });
 
-
-        //  update a book
+        // Update book by ID
         app.put('/books/:id', async (req, res) => {
             const id = req.params.id;
             const updatedBook = req.body;
@@ -90,7 +144,7 @@ async function run() {
                     res.status(404).send({ message: "Book not found or no changes made." });
                 }
             } catch (err) {
-                console.error("🚨 Update error:", err);
+                console.error(" Update error:", err);
                 res.status(500).send({
                     error: "Failed to update book",
                     details: err.message
@@ -98,9 +152,7 @@ async function run() {
             }
         });
 
-
-
-        // DELETE book by ID
+        // Delete book by ID
         app.delete('/books/:id', async (req, res) => {
             const id = req.params.id;
 
@@ -117,7 +169,7 @@ async function run() {
                     res.status(404).send({ message: "Book not found" });
                 }
             } catch (err) {
-                console.error("❌ DELETE ERROR:", err);
+                console.error(" DELETE ERROR:", err);
                 res.status(500).send({ error: "Failed to delete", details: err.message });
             }
         });
@@ -125,19 +177,15 @@ async function run() {
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-
         // await client.close();
     }
 }
 run().catch(console.dir);
 
-
-
-
 app.get('/', (req, res) => {
-    res.send('Add your Books ')
+    res.send('Add your Books ');
 });
 
 app.listen(port, () => {
-    console.log(`Books server is running on port ${port}`)
+    console.log(`Books server is running on port ${port}`);
 });
