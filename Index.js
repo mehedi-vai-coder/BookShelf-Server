@@ -127,30 +127,52 @@ async function run() {
             }
         });
 
-        // Update book by ID
-        app.put('/books/:id', async (req, res) => {
+        // Upvote 
+        app.patch('/books/:id/upvote', async (req, res) => {
             const id = req.params.id;
-            const updatedBook = req.body;
+
+            try {
+                const result = await booksCollection.findOneAndUpdate(
+                    { _id: new ObjectId(id) },
+                    { $inc: { upvote: 1 } },
+                    { returnDocument: 'after' }
+                );
+
+                if (!result.value) {
+                    return res.status(404).send({ message: "Book not found" });
+                }
+
+                res.send({ upvote: result.value.upvote });
+            } catch (err) {
+                console.error("Upvote error:", err);
+                res.status(500).send({ error: "Failed to upvote", details: err.message });
+            }
+        });
+
+        // Update reading status
+        app.patch('/books/:id', async (req, res) => {
+            const id = req.params.id;
+            const { reading_status } = req.body;
 
             try {
                 const result = await booksCollection.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: updatedBook }
+                    { $set: { reading_status } }
                 );
 
-                if (result.modifiedCount > 0) {
-                    res.send({ success: true });
+                if (result.modifiedCount === 1) {
+                    res.send({ message: "Status updated" });
                 } else {
-                    res.status(404).send({ message: "Book not found or no changes made." });
+                    res.status(404).send({ message: "Book not found or no change" });
                 }
             } catch (err) {
-                console.error(" Update error:", err);
-                res.status(500).send({
-                    error: "Failed to update book",
-                    details: err.message
-                });
+                console.error("Status update error:", err);
+                res.status(500).send({ error: "Failed to update reading status" });
             }
         });
+
+
+
 
         // Delete book by ID
         app.delete('/books/:id', async (req, res) => {
