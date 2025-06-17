@@ -203,8 +203,8 @@ app.get('/', (req, res) => {
     res.send('Add your Books ');
 });
 
-module.exports = app;
+// module.exports = app;
 
-// app.listen(port, () => {
-//     console.log(`Books server is running on port ${port}`);
-// });
+app.listen(port, () => {
+    console.log(`Books server is running on port ${port}`);
+});
