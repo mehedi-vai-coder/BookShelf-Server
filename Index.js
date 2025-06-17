@@ -171,9 +171,6 @@ async function run() {
             }
         });
 
-
-
-
         // Delete book by ID
         app.delete('/books/:id', async (req, res) => {
             const id = req.params.id;
