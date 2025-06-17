@@ -1,10 +1,9 @@
 require('dotenv').config()
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
-const { ObjectId } = require('mongodb');
 
 // middleware 
 app.use(cors());
@@ -22,8 +21,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
-
+        // await client.connect();
         const booksCollection = client.db('BookShelf').collection('Books');
         const reviewsCollection = client.db('BookShelf').collection('Reviews');
 
@@ -193,8 +191,8 @@ async function run() {
             }
         });
 
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // await client.close();
     }
